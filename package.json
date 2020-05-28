@@ -1,0 +1,19 @@
+{
+  "name": "robotinterface",
+  "version": "1.0.0",
+  "description": "A web interface for controlling a raspberry pi robot",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Quillbert/RobotInterface.git"
+  },
+  "author": "Andrew Hamby",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Quillbert/RobotInterface/issues"
+  },
+  "homepage": "https://github.com/Quillbert/RobotInterface#readme"
+}
