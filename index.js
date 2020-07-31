@@ -7,4 +7,7 @@ var io = socket(server);
 console.log("socket started");
 io.on('connection', function(socket) {
 	io.emit('message', "Hello World!");
+	socket.on('move', function(data) {
+		io.emit('message', data);
+	});
 });
