@@ -2,12 +2,15 @@ var express = require('express');
 var app = express();
 var server = app.listen(process.env.PORT || 3000);
 app.use(express.static(__dirname + "/public"));
-var socket = require('socket.io');
-var io = socket(server);
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({server: server});
 console.log("socket started");
-io.on('connection', function(socket) {
-	io.emit('message', "Hello World!");
-	socket.on('move', function(data) {
-		io.emit('message', data);
-	});
+wss.on('connection', function connection(ws) {
+  ws.on('message', function incoming(data) {
+    wss.clients.forEach(function each(client) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(data);
+      }
+    });
+  });
 });
