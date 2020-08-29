@@ -97,6 +97,7 @@
 		region: 'us-east-1',
 		endpoint: undefined
 	}
+	var user = new AWS.IAM(a, b);	
 	var kinesisVideo = new AWS.KinesisVideo(options);
 	var kinesisVideoArchivedContent = new AWS.KinesisVideoArchivedMedia(options);
 	console.log('Fetching data endpoint');
