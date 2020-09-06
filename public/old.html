@@ -1,0 +1,149 @@
+<meta charset="utf-8">
+<html>
+<head>
+	<title>Robot Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.490.0/aws-sdk.min.js"></script>
+	<script src="https://sdk.amazonaws.com/js/aws-sdk-2.737.0.min.js"></script>
+	<script type="text/javascript">
+		var loc = location.origin;
+		loc = loc.substring(4, loc.length);
+		loc = "ws" + loc;
+		const ws = new WebSocket(loc);
+		ws.addEventListener('open', function (event) {
+		    ws.send('Hello Server!');
+		    console.log('connected');
+		});
+		ws.addEventListener('message', function (event) {
+		    console.log(event.data);
+		});
+	</script>
+	<style type="text/css">
+		.container {
+			display: grid;
+			grid-template-columns: 50px 50px 50px;
+			grid-template-rows: 50px 50px;
+			grid-template-areas: 
+				". u ."
+				"l d r";
+		}
+		#forward {
+			grid-area: u;
+		}
+		#left {
+			grid-area: l;
+		}
+		#backwards {
+			grid-area: d;
+		}
+		#right {
+			grid-area: r;
+		}
+		#videojs {
+			transform:rotate(180deg)
+		}
+	</style>
+</head>
+<body>
+	<video id="videojs" class="player video-js vjs-default-skin" controls autoplay></video>
+    <link rel="stylesheet" href="https://vjs.zencdn.net/6.6.3/video-js.css">
+    <script src="https://vjs.zencdn.net/6.6.3/video.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.14.1/videojs-contrib-hls.js"></script>
+<form>
+	<div class="container">
+		<input type="button" name="forward" id="forward" value="&uarr;">
+		<input type="button" name="left" id="left" value="&larr;">
+		<input type="button" name="backwards" id="backwards" value="&darr;">
+		<input type="button" name="right" id="right" value="&rarr;">
+	</div>
+</form>
+<script type="text/javascript">
+	const up = document.getElementById("forward");
+	up.addEventListener('click', moveUp);
+	function moveUp() {
+		ws.send("forward");
+	}
+	const left = document.getElementById("left");
+	left.addEventListener('click', moveLeft);
+	function moveLeft() {
+		ws.send("left");
+	}
+	const down = document.getElementById("backwards");
+	down.addEventListener('click', moveBack);
+	function moveBack() {
+		ws.send("backward");
+	}
+	const right = document.getElementById("right");
+	right.addEventListener('click', moveRight);
+	function moveRight() {
+		ws.send("right");
+	}
+</script>
+<script type="text/javascript">
+	AWS.config.region = 'us-east-1'; // Region
+	AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    		IdentityPoolId: 'us-east-1:58ac8f77-de2e-4d43-992c-6b022203ecf5',
+	});
+	var a, b;
+	AWS.config.credentials.get(function(){
+	    // Credentials will be available when this function is called.
+	    a = AWS.config.credentials.accessKeyId;
+            b = AWS.config.credentials.secretAccessKeyId;
+	});
+	var sts = new AWS.STS();
+	var params = {
+		RoleArn: 'arn:aws:iam::288975282110:role/kinesis-view2',
+		RoleSessionName: 'ViewKVStream',
+	};
+	sts.assumeRole(params, function(err, data) {
+		if(err) console.log(err, err.stack);
+		else console.log(data);
+	});
+	var options = {
+		accessKeyId: a,
+		secretAccessKey: b,
+		sessionToken: undefined,
+		region: 'us-east-1',
+		endpoint: undefined
+	}
+	var kinesisVideo = new AWS.KinesisVideo(options);
+	var kinesisVideoArchivedContent = new AWS.KinesisVideoArchivedMedia(options);
+	console.log('Fetching data endpoint');
+	kinesisVideo.getDataEndpoint({
+		StreamName: 'MyKVStream',
+		APIName: "GET_HLS_STREAMING_SESSION_URL"
+	}, function(err, response) {
+		if (err) { return console.error(err); }
+		console.log('Data endpoint: ' + response.DataEndpoint);
+        kinesisVideoArchivedContent.endpoint = new AWS.Endpoint(response.DataEndpoint);
+        kinesisVideoArchivedContent.getHLSStreamingSessionURL({
+        	StreamName: 'MyKVStream',
+        	PlaybackMode: "LIVE",
+        	HLSFragmentSelector: {
+        		FragmentSelectorType: 'SERVER_TIMESTAMP',
+        		TimestampRange: undefined
+        	},
+        	ContainerFormat: 'FRAGMENTED_MP4',
+        	DiscontinuityMode: 'ALWAYS',
+        	DisplayFragmentTimestamp: 'NEVER',
+        	MaxMediaPlaylistFragmentResults: undefined,
+        	Expires: undefined
+        }, function(err, response) {
+        	if (err) { return console.error(err); }
+        	console.log('HLS Streaming Session URL: ' + response.HLSStreamingSessionURL);
+        	var playerElement = document.getElementById('videojs');
+        	var player = new videojs('videojs');
+        	console.log("Loaded Videojs Player");
+        	player.src({
+                src: response.HLSStreamingSessionURL,
+                type: 'application/x-mpegURL'
+            });
+            console.log('Set player source');
+            player.play();
+            console.log('Starting playback');
+
+        });
+	});
+</script>
+</body>
+</html>
+

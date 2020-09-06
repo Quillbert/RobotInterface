@@ -38,17 +38,14 @@
 		#right {
 			grid-area: r;
 		}
-		#videojs {
+		#video {
 			transform:rotate(180deg)
 		}
 	</style>
 </head>
 <body>
-	<video id="videojs" class="player video-js vjs-default-skin" controls autoplay></video>
-    <link rel="stylesheet" href="https://vjs.zencdn.net/6.6.3/video-js.css">
-    <script src="https://vjs.zencdn.net/6.6.3/video.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.14.1/videojs-contrib-hls.js"></script>
 <form>
+	<img src="http://robot:8080/?action=stream" id="video">
 	<div class="container">
 		<input type="button" name="forward" id="forward" value="&uarr;">
 		<input type="button" name="left" id="left" value="&larr;">
@@ -58,84 +55,33 @@
 </form>
 <script type="text/javascript">
 	const up = document.getElementById("forward");
-	up.addEventListener('click', moveUp);
+	up.addEventListener('mousedown', moveUp);
+	up.addEventListener('mouseup', stop);
 	function moveUp() {
 		ws.send("forward");
 	}
 	const left = document.getElementById("left");
-	left.addEventListener('click', moveLeft);
+	left.addEventListener('mousedown', moveLeft);
+	left.addEventListener('mouseup', stop);
 	function moveLeft() {
 		ws.send("left");
 	}
 	const down = document.getElementById("backwards");
-	down.addEventListener('click', moveBack);
+	down.addEventListener('mousedown', moveBack);
+	down.addEventListener('mouseup', stop);
 	function moveBack() {
 		ws.send("backward");
 	}
 	const right = document.getElementById("right");
-	right.addEventListener('click', moveRight);
+	right.addEventListener('mousedown', moveRight);
+	right.addEventListener('mouseup', stop);
 	function moveRight() {
 		ws.send("right");
 	}
-</script>
-<script type="text/javascript">
-	AWS.config.region = 'us-east-1';
-	AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-	    IdentityPoolId: 'us-east-1:e694ffd1-3dff-4274-a60a-37e43acbddab'
-	});
-	var a, b;
-	AWS.config.credentials.get(function(){
-	    // Credentials will be available when this function is called.
-	    a = AWS.config.credentials.accessKeyId;
-            b = AWS.config.credentials.secretAccessKey;
-	});
-
-	var options = {
-		accessKeyId: a,
-		secretAccessKey: b,
-		sessionToken: undefined,
-		region: 'us-east-1',
-		endpoint: undefined
+	function stop() {
+		ws.send("stop");
 	}
-	var user = new AWS.IAM(a, b);	
-	var kinesisVideo = new AWS.KinesisVideo(options);
-	var kinesisVideoArchivedContent = new AWS.KinesisVideoArchivedMedia(options);
-	console.log('Fetching data endpoint');
-	kinesisVideo.getDataEndpoint({
-		StreamName: 'MyKVStream',
-		APIName: "GET_HLS_STREAMING_SESSION_URL"
-	}, function(err, response) {
-		if (err) { return console.error(err); }
-		console.log('Data endpoint: ' + response.DataEndpoint);
-        kinesisVideoArchivedContent.endpoint = new AWS.Endpoint(response.DataEndpoint);
-        kinesisVideoArchivedContent.getHLSStreamingSessionURL({
-        	StreamName: 'MyKVStream',
-        	PlaybackMode: "LIVE",
-        	HLSFragmentSelector: {
-        		FragmentSelectorType: 'SERVER_TIMESTAMP',
-        		TimestampRange: undefined
-        	},
-        	ContainerFormat: 'FRAGMENTED_MP4',
-        	DiscontinuityMode: 'ALWAYS',
-        	DisplayFragmentTimestamp: 'NEVER',
-        	MaxMediaPlaylistFragmentResults: undefined,
-        	Expires: undefined
-        }, function(err, response) {
-        	if (err) { return console.error(err); }
-        	console.log('HLS Streaming Session URL: ' + response.HLSStreamingSessionURL);
-        	var playerElement = document.getElementById('videojs');
-        	var player = new videojs('videojs');
-        	console.log("Loaded Videojs Player");
-        	player.src({
-                src: response.HLSStreamingSessionURL,
-                type: 'application/x-mpegURL'
-            });
-            console.log('Set player source');
-            player.play();
-            console.log('Starting playback');
-
-        });
-	});
+</script>
 </script>
 </body>
 </html>
