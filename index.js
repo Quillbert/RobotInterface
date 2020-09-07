@@ -26,7 +26,7 @@ const password = process.env.REMOTEIT_PASSWORD;
 const wait = "true";
 const hostip = "0.0.0.0";
 
-setInterval(sendURL, 60 * 1000);
+setInterval(sendURL, 10 * 1000);
 sendURL();
 
 function sendURL() {
